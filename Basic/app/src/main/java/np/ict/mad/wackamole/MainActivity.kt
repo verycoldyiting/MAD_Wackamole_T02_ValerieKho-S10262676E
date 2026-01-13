@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.*
 
 
 class MainActivity : ComponentActivity() {
@@ -54,6 +55,12 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameScreen(onOpenSettings: () -> Unit) {
+    var score by remember { mutableStateOf(0) }
+    var timeLeft by remember { mutableStateOf(30) }
+    var moleIndex by remember { mutableStateOf(0) }
+    var isRunning by remember { mutableStateOf(false) }
+    var highScore by remember { mutableStateOf(0) }
+
     Column(modifier = Modifier.fillMaxSize()) {
 
         TopAppBar(
@@ -76,26 +83,33 @@ fun GameScreen(onOpenSettings: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Score: 0")
-                Text("Time: 30")
+                Text("Score: $score")
+                Text("Time: $timeLeft")
             }
 
             Spacer(Modifier.height(8.dp))
-            Text("High score: 0")
+            Text("High score: $highScore")
 
             Spacer(Modifier.height(20.dp))
 
-            // 3x3 grid (UI only for now)
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                repeat(3) {
+                for (r in 0..2) {
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        repeat(3) {
+                        for (c in 0..2) {
+                            val index = r * 3 + c
                             Button(
-                                onClick = { },
+                                onClick = {
+                                    if (isRunning && index == moleIndex) {
+                                        score += 1
+                                        moleIndex = (0..8).random() // move mole immediately
+                                    }
+                                },
                                 modifier = Modifier.size(88.dp),
                                 shape = CircleShape,
                                 contentPadding = PaddingValues(0.dp)
-                            ) { Text("") }
+                            ) {
+                                Text(if (isRunning && index == moleIndex) "M" else "")
+                            }
                         }
                     }
                 }
@@ -103,12 +117,18 @@ fun GameScreen(onOpenSettings: () -> Unit) {
 
             Spacer(Modifier.height(20.dp))
 
-            Button(onClick = { }) {
-                Text("Start")
+            Button(onClick = {
+                score = 0
+                timeLeft = 30
+                moleIndex = (0..8).random()
+                isRunning = true
+            }) {
+                Text(if (isRunning) "Restart" else "Start")
             }
         }
     }
 }
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
