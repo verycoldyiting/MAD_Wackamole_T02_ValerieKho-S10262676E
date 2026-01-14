@@ -54,25 +54,28 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun GameScreen(onOpenSettings: () -> Unit) {
 
-    // ---------------- STATE ----------------
+    //  STATE
     var score by remember { mutableStateOf(0) }
     var timeLeft by remember { mutableStateOf(30) }
     var moleIndex by remember { mutableStateOf(0) }
     var isRunning by remember { mutableStateOf(false) }
+    var gameOver by remember { mutableStateOf(false) }
+
 
     val context = LocalContext.current
     var highScore by remember { mutableStateOf(getHighScore(context)) }
 
-    // ---------------- TIMER ----------------
+    //  TIMER
     LaunchedEffect(isRunning) {
         if (isRunning) {
             while (timeLeft > 0) {
                 delay(1000)
-                timeLeft -= 1
+                timeLeft--
             }
-            isRunning = false
 
-            // update high score when game ends
+            isRunning = false
+            gameOver = true
+
             if (score > highScore) {
                 highScore = score
                 saveHighScore(context, score)
@@ -80,18 +83,19 @@ fun GameScreen(onOpenSettings: () -> Unit) {
         }
     }
 
-    // ---------------- MOLE MOVEMENT ----------------
-    LaunchedEffect(isRunning) {
-        if (isRunning) {
-            while (isRunning && timeLeft > 0) {
-                val delayTime = (700..1000).random().toLong()
-                delay(delayTime)
+
+    //  MOLE MOVEMENT
+    LaunchedEffect(isRunning, gameOver) {
+        if (isRunning && !gameOver) {
+            while (isRunning && !gameOver) {
+                delay((700..1000).random().toLong())
                 moleIndex = (0..8).random()
             }
         }
     }
 
-    // ---------------- UI ----------------
+
+    //  UI
     Column(modifier = Modifier.fillMaxSize()) {
 
         TopAppBar(
@@ -151,25 +155,26 @@ fun GameScreen(onOpenSettings: () -> Unit) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Button(
-                onClick = {
-                    score = 0
-                    timeLeft = 30
-                    moleIndex = (0..8).random()
-                    isRunning = true
-                }
-            ) {
+            Button(onClick = {
+                score = 0
+                timeLeft = 30
+                moleIndex = (0..8).random()
+                isRunning = true
+                gameOver = false
+            }) {
                 Text(if (isRunning) "Restart" else "Start")
             }
 
+
             Spacer(modifier = Modifier.height(10.dp))
 
-            if (!isRunning && timeLeft == 0) {
+            if (gameOver) {
                 Text(
                     text = "Game over! Final score: $score",
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
+
         }
     }
 }
@@ -200,7 +205,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     }
 }
 
-// ---------------- SHARED PREFERENCES ----------------
+//  SHARED PREFERENCES
 fun getHighScore(context: Context): Int {
     val prefs = context.getSharedPreferences("wackamole_prefs", Context.MODE_PRIVATE)
     return prefs.getInt("high_score", 0)
